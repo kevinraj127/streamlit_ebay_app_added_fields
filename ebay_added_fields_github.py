@@ -228,6 +228,7 @@ with st.sidebar:
 # Main search interface
 category_options = {
     "All Categories": None,
+    "Books": "267",
     "DVD & Blu-ray": "617",
     "Headphones": "112529",
     "Music CDs": "176984",
