@@ -326,12 +326,10 @@ if search_clicked:
         if key.startswith('loaded_'):
             del st.session_state[key]
 
-    excluded_terms = "-(case,cover,keyboard,manual,guide,screen,protector,folio,box,accessory,cable,cord,charger,pen,\"for parts\",\"not working\",\"empty box\",broken,defective)"
+    excluded_terms = "-(case only, manual only, no disc,\"for parts\",\"not working\",\"empty box\",broken,defective)"
     
-    if selected_category in ["Cell Phones & Smartphones", "Tablets & eBook Readers"]:
+    if selected_category in ["Video Games & Consoles"]:
         query = f'"{search_term}" {excluded_terms}'
-    elif selected_category == "Tech Accessories":
-        query = f'"{search_term}" -(broken,defective,\"not working\",\"for parts\",\"empty box\")'
     else:
         query = f'"{search_term}"'
 
