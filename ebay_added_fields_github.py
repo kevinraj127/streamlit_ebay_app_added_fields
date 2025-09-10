@@ -326,7 +326,7 @@ if search_clicked:
         if key.startswith('loaded_'):
             del st.session_state[key]
 
-    excluded_terms = "-(case only, manual only, insert only, artwork only, booklet only, manaul only, no disc,\"for parts\",\"not working\",\"empty box\",broken,defective)"
+    excluded_terms = "-(no game, instructions, instruction manual, case only, manual only, insert only, artwork only, booklet only, manaul only, no disc,\"for parts\",\"not working\",\"empty box\",broken,defective)"
     
     if selected_category in ["Video Games & Consoles"]:
         query = f'"{search_term}" {excluded_terms}'
