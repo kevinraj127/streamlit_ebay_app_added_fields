@@ -22,7 +22,6 @@ if 'saved_searches' not in st.session_state:
 try:
     CLIENT_ID = st.secrets["ebay"]["CLIENT_ID"]
     CLIENT_SECRET = st.secrets["ebay"]["CLIENT_SECRET"]
-
     
     if not CLIENT_ID or not CLIENT_SECRET:
         st.error("eBay API credentials not found in secrets. Please configure them in your Streamlit secrets.")
@@ -91,6 +90,45 @@ def categorize_seller(feedback_score, feedback_percent):
     else:
         return "Uncategorized"
 
+# Function to calculate COGS from target profit margin
+def calculate_cogs_from_margin(price, shipping, shipping_cost_input, ad_rate, category, target_margin):
+    """Calculate required COGS to achieve target profit margin"""
+    try:
+        price = float(price) if price is not None else 0.0
+        shipping = float(shipping) if shipping is not None else 0.0
+        shipping_cost_input = float(shipping_cost_input) if shipping_cost_input is not None else 0.0
+        ad_rate = float(ad_rate) if ad_rate is not None else 0.0
+        target_margin = float(target_margin) if target_margin is not None else 0.0
+        
+        # eBay fee structure
+        if category in ["Headphones", "Video Games & Consoles"]:
+            ebay_fee = 0.136
+        else:
+            ebay_fee = 0.153
+        
+        final_value_fee = 0.4 
+        tax_rate = 0.0825
+        ad_rate_decimal = ad_rate / 100
+        target_margin_decimal = target_margin / 100
+        
+        sold_price = price + shipping_cost_input
+        sold_price_with_shipping_taxes = sold_price * (1 + tax_rate)
+        ebay_transaction_fees = (sold_price_with_shipping_taxes * ebay_fee) + final_value_fee
+        ad_fees = ad_rate_decimal * sold_price_with_shipping_taxes
+        total_expenses = ebay_transaction_fees + ad_fees + shipping_cost_input
+        ebay_pay_out = sold_price - total_expenses
+        
+        # Calculate required COGS for target margin
+        # target_margin = (ebay_pay_out - cogs) / price
+        # target_margin * price = ebay_pay_out - cogs
+        # cogs = ebay_pay_out - (target_margin * price)
+        required_cogs = ebay_pay_out - (target_margin_decimal * price)
+        
+        return max(0, required_cogs)  # Don't allow negative COGS
+        
+    except (ValueError, TypeError, ZeroDivisionError) as e:
+        return 0.0
+
 # Functions for saved searches
 def save_current_search(search_params):
     """Save current search parameters"""
@@ -143,17 +181,21 @@ def create_price_analytics(df):
     # Metrics row
     col1, col2, col3, col4 = st.columns(4)
     
-    with col1:
-        avg_price = df_clean['price'].mean()
-        st.metric("Average Price", f"${avg_price:.2f}")
+    # with col1:
+    #     avg_price = df_clean['price'].mean()
+    #     st.metric("Average Price", f"${avg_price:.2f}")
     
-    with col2:
+    with col1:
         median_price = df_clean['price'].median()
         st.metric("Median Price", f"${median_price:.2f}")
     
-    with col3:
+    with col2:
         median_ebay_payout = df_clean['ebay_pay_out'].median()
         st.metric("Median eBay Pay Out", f"${median_ebay_payout:.2f}")
+
+    with col3:
+        median_cogs = df_clean['target_acquisition_cost_cogs'].median()
+        st.metric("Median COGS", f"${median_cogs:.2f}")
 
     with col4:
         median_profit = df_clean['net_profit'].median()
@@ -194,7 +236,7 @@ def calculate_profit_metrics(price, shipping, cogs, shipping_cost_input, ad_rate
         return 0.0, 0.0, 0.0, 0.0
 
 # UI
-st.title("eBay Product Listings with Estimated Profit")
+st.title("eBay Product Listings with Estimated Profit and Target Acquisition Cost")
 st.write("Fetch latest eBay listings by category, type, max price, COGS, and estimated profit.")
 
 # Saved Searches Sidebar
@@ -228,7 +270,6 @@ with st.sidebar:
 # Main search interface
 category_options = {
     "All Categories": None,
-    "Books": "267",
     "DVD & Blu-ray": "617",
     "Headphones": "112529",
     "Music CDs": "176984",
@@ -243,7 +284,6 @@ selected_category = st.selectbox(
     index=list(category_options.keys()).index(st.session_state.get('loaded_category', 'All Categories'))
 )
 
-
 search_term = st.text_input(
     "Search for:", 
     value=st.session_state.get('loaded_search_term', '')
@@ -256,12 +296,33 @@ max_price = st.number_input(
     value=st.session_state.get('loaded_max_price', 150)
 )
 
-cogs = st.number_input(
-    "Cost of Goods Sold ($):",
-    min_value=0.0,
-    max_value=10000.0,
-    value=float(st.session_state.get('loaded_cogs', 2))
+# COGS/Profit Margin Selection
+st.subheader("💰 Cost & Profit Settings")
+
+cogs_method = st.selectbox(
+    "Choose COGS calculation method:",
+    ["Manual COGS Entry", "Target Profit Margin"],
+    index=0 if st.session_state.get('loaded_cogs_method', 'Manual COGS Entry') == 'Manual COGS Entry' else 1
 )
+
+if cogs_method == "Manual COGS Entry":
+    cogs = st.number_input(
+        "Cost of Goods Sold ($):",
+        min_value=0.0,
+        max_value=10000.0,
+        value=float(st.session_state.get('loaded_cogs', 2.0))
+    )
+    target_profit_margin = None
+    st.info("💡 Using manual COGS entry. The app will calculate actual profit margins for each listing.")
+else:
+    target_profit_margin = st.number_input(
+        "Target Profit Margin (%):",
+        min_value=0.0,
+        max_value=100.0,
+        value=float(st.session_state.get('loaded_target_profit_margin', 30.0))
+    )
+    cogs = None
+    st.info("💡 Using target profit margin. The app will calculate required COGS (Target Acquisition Cost) for each listing to achieve your target margin.")
 
 shipping_cost = st.number_input(
     "Shipping Cost ($):",
@@ -296,7 +357,9 @@ with col2:
             'search_term': search_term,
             'category': selected_category,
             'max_price': max_price,
-            'cogs': cogs,
+            'cogs_method': cogs_method,
+            'cogs': cogs if cogs_method == "Manual COGS Entry" else None,
+            'target_profit_margin': target_profit_margin if cogs_method == "Target Profit Margin" else None,
             'shipping_cost': shipping_cost,
             'ad_rate': ad_rate,
             'limit': limit
@@ -326,10 +389,12 @@ if search_clicked:
         if key.startswith('loaded_'):
             del st.session_state[key]
 
-    excluded_terms = "-(no game, instructions, instruction manual, case only, manual only, insert only, artwork only, booklet only, manaul only, no disc,\"for parts\",\"not working\",\"empty box\",broken,defective)"
+    excluded_terms = "-(case,cover,keyboard,manual,guide,screen,protector,folio,box,accessory,cable,cord,charger,pen,\"for parts\",\"not working\",\"empty box\",broken,defective)"
     
-    if selected_category in ["Video Games & Consoles"]:
+    if selected_category in ["Cell Phones & Smartphones", "Tablets & eBook Readers"]:
         query = f'"{search_term}" {excluded_terms}'
+    elif selected_category == "Tech Accessories":
+        query = f'"{search_term}" -(broken,defective,\"not working\",\"for parts\",\"empty box\")'
     else:
         query = f'"{search_term}"'
 
@@ -397,9 +462,19 @@ if search_clicked:
                     if condition_id == "7000":
                         continue
                     
+                    # Calculate COGS based on method chosen
+                    if cogs_method == "Manual COGS Entry":
+                        actual_cogs = cogs
+                        calculated_target_cogs = None
+                    else:  # Target Profit Margin
+                        calculated_target_cogs = calculate_cogs_from_margin(
+                            price, shipping, shipping_cost, ad_rate, selected_category, target_profit_margin
+                        )
+                        actual_cogs = calculated_target_cogs
+
                     # Calculate profit metrics
                     net_profit, profit_margin, total_expenses, ebay_pay_out = calculate_profit_metrics(
-                        price, shipping, cogs, shipping_cost, ad_rate, selected_category
+                        price, shipping, actual_cogs, shipping_cost, ad_rate, selected_category
                     )
 
                     # Get seller information
@@ -418,7 +493,7 @@ if search_clicked:
                             "price": price,
                             "ebay_pay_out": ebay_pay_out,
                             "total_expenses": total_expenses,
-                            "cogs": cogs,
+                            "target_acquisition_cost_cogs": actual_cogs,
                             "net_profit": net_profit,
                             "profit_margin": profit_margin,
                             "listing_type": ", ".join(buying_options),
@@ -439,29 +514,44 @@ if search_clicked:
                 df = pd.DataFrame(results)
                 df = df.sort_values(by="price").reset_index(drop=True)
 
+                # Display method info
+                st.header("🎯 Search Configuration")
+                if cogs_method == "Manual COGS Entry":
+                    st.info(f"📊 **Method:** Manual COGS Entry (${cogs:.2f})")
+                    st.write("The **Target Acquisition Cost/COGS** column shows your manually entered COGS value.")
+                else:
+                    st.info(f"📊 **Method:** Target Profit Margin ({target_profit_margin:.1f}%)")
+                    st.write("The **Target Acquisition Cost/COGS** column shows the maximum you should pay to achieve your target profit margin.")
+
                 # Price Analytics Dashboard
                 st.header("📊 Price Analytics")
                 create_price_analytics(df)
                 
                 st.header("📋 Search Results")
                 
-                # Display main results
-                display_cols = ['listing', 'condition', 'price', 'ebay_pay_out', 'net_profit', 
-                              'profit_margin', 'seller', 'seller_rating', 'seller_feedback', 'link']
+                # Display main results with updated column order
+                display_cols = ['listing', 'condition', 'price', 'target_acquisition_cost_cogs', 'ebay_pay_out', 
+                              'net_profit', 'profit_margin', 'seller', 'seller_rating', 'seller_feedback', 'link']
                 available_cols = [col for col in display_cols if col in df.columns]
+
+                column_config = {
+                    "link": st.column_config.LinkColumn("Link", display_text="View Listing"),
+                    "price": st.column_config.NumberColumn("Price", format="$%.2f"),
+                    "target_acquisition_cost_cogs": st.column_config.NumberColumn(
+                        "Target Acquisition Cost/COGS", 
+                        format="$%.2f",
+                        help="Manual COGS or calculated target acquisition cost based on profit margin"
+                    ),
+                    "ebay_pay_out": st.column_config.NumberColumn("eBay Payout", format="$%.2f"),
+                    "total_expenses": st.column_config.NumberColumn("Total Expenses", format="$%.2f"),
+                    "net_profit": st.column_config.NumberColumn("Net Profit", format="$%.2f"),
+                    "profit_margin": st.column_config.NumberColumn("Profit Margin", format="%.2f%%"),
+                    "seller_feedback": st.column_config.NumberColumn("Seller Feedback %", format="%.1f%%")
+                }
 
                 st.dataframe(
                     df[available_cols],
-                    column_config={
-                        "link": st.column_config.LinkColumn("Link", display_text="View Listing"),
-                        "price": st.column_config.NumberColumn("Price", format="$%.2f"),
-                        "ebay_pay_out": st.column_config.NumberColumn("eBay Payout", format="$%.2f"),
-                        "total_expenses": st.column_config.NumberColumn("Total Expenses", format="$%.2f"),
-                        "cogs": st.column_config.NumberColumn("COGS", format="$%.2f"),
-                        "net_profit": st.column_config.NumberColumn("Net Profit", format="$%.2f"),
-                        "profit_margin": st.column_config.NumberColumn("Profit Margin", format="%.2f%%"),
-                        "seller_feedback": st.column_config.NumberColumn("Seller Feedback %", format="%.1f%%")
-                    },
+                    column_config=column_config,
                     use_container_width=True
                 )
             
