@@ -389,12 +389,51 @@ if search_clicked:
         if key.startswith('loaded_'):
             del st.session_state[key]
 
-    excluded_terms = "-(case,cover,keyboard,manual,guide,screen,protector,folio,box,accessory,cable,cord,charger,pen,\"for parts\",\"not working\",\"empty box\",broken,defective)"
     
-    if selected_category in ["Cell Phones & Smartphones", "Tablets & eBook Readers"]:
-        query = f'"{search_term}" {excluded_terms}'
-    elif selected_category == "Tech Accessories":
-        query = f'"{search_term}" -(broken,defective,\"not working\",\"for parts\",\"empty box\")'
+    excluded_terms_headphones = [
+            # Standalone accessories (not actual headphones) - be very specific
+            "ear pads only", "earpads only", "earpad only", "pads only",
+            "ear cushions only", "cushions only", "foam only", 
+            "cable only", "cord only", "wire only", "charger only",
+            "case only", "pouch only", "bag only", "box only",
+            "manual only", "instructions only", "parts only",
+            "spare parts", "accessory kit", "accessories only",
+            "stand only", "holder only", "hanger only",
+            
+            # Listings that start with compatibility/accessory language (not actual headphones)
+            "compatible with", "fits", "for use with", "designed for",
+            "ltgem case", "khanka case", "co2crea case", "aproca case",
+            
+            # Replacement/accessory patterns that indicate standalone parts
+            "replacement for", "replacement earpads for", "replacement ear pads for",
+            "replacement speakers for", "replacement cable for", "replacement cord for",
+            "replacement hifi speakers", "replacement repair upgrade",
+            "pairs replacement", "pair replacement", "x replacement",
+            "premium vegan leather earpads", "perforated replacement earpads",
+            "vegan leather earpads for", "memory foam earpads for",
+            
+            # Listings that are clearly just selling accessories/parts (specific patterns)
+            "oem ear pads for", "genuine ear pads for", "original ear pads for",
+            "replacement pads for", "replacement ear pads for", "replacement cushions for",
+            "ear pads for", "ear cushions for", "pads for", "earpads for",
+            "headphone cable for", "headphone cord for", "headphone wire for",
+            "carrying case for", "storage case for", "travel case for", "headphone case for",
+            "carrying pouch for", "storage pouch for", "travel pouch for", "headphone pouch for",
+            "case for", "pouch for", "bag for",
+            "ear pad set for", "cushion set for", "foam set for",
+            "headphone replacement ear pad", "headphones replacement ear",
+            
+            # Non-functional items to avoid
+            "broken", "cracked", "damaged beyond repair", "for parts not working",
+            "does not work", "no sound", "dead", "fried", "blown driver",
+            
+            # Empty/missing items
+            "empty box", "box no headphones", "packaging only"
+        ]
+    exclusion_string = "(" + ",".join(excluded_terms_headphones) + ")"
+
+    if selected_category in ["Headphones"]:
+        query = f'"{search_term}" -{exclusion_string}'
     else:
         query = f'"{search_term}"'
 
