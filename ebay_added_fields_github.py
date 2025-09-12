@@ -414,13 +414,13 @@ if search_clicked:
             
             # Listings that are clearly just selling accessories/parts (specific patterns)
             "oem ear pads for", "genuine ear pads for", "original ear pads for",
-            "replacement pads for", "replacement ear pads for", "replacement cushions for",
+            "replacement pads for", "replacement ear pads for", "replacement headband", "replacement headband cushion pad", "replacement cushions for",
             "ear pads for", "ear cushions for", "pads for", "earpads for",
             "headphone cable for", "headphone cord for", "headphone wire for",
             "carrying case for", "storage case for", "travel case for", "headphone case for",
             "carrying pouch for", "storage pouch for", "travel pouch for", "headphone pouch for",
             "case for", "pouch for", "bag for",
-            "ear pad set for", "cushion set for", "foam set for",
+            "hinge parts", "foam cushion", "ear pad set for", "cushion set for", "foam set for",
             "headphone replacement ear pad", "headphones replacement ear",
             
             # Non-functional items to avoid
