@@ -421,7 +421,7 @@ if search_clicked:
             "carrying pouch for", "storage pouch for", "travel pouch for", "headphone pouch for",
             "case for", "pouch for", "bag for",
             "hinge parts", "foam cushion", "ear pad set for", "cushion set for", "foam set for",
-            "headphone replacement ear pad", "headphones replacement ear",
+            "headphone replacement ear pad", "headphones replacement ear", "ear pillow pads",
             
             # Non-functional items to avoid
             "broken", "cracked", "damaged beyond repair", "for parts not working",
