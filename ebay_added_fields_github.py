@@ -633,4 +633,4 @@ if search_clicked:
             st.error(f"Network error: {e}")
         except Exception as e:
             st.error(f"Unexpected error: {e}")
-            st.write("Please try again or contact support if the problem persists.")
+            st.write("Please try again")
