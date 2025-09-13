@@ -91,7 +91,7 @@ def categorize_seller(feedback_score, feedback_percent):
         return "Uncategorized"
 
 # Function to calculate COGS from target profit margin
-def calculate_cogs_from_margin(price, shipping, shipping_cost_input, ad_rate, category, target_margin):
+def calculate_cogs_from_margin(price, shipping, shipping_cost_input, ad_rate, category, target_margin, shipping_method):
     """Calculate required COGS to achieve target profit margin"""
     try:
         price = float(price) if price is not None else 0.0
@@ -111,7 +111,12 @@ def calculate_cogs_from_margin(price, shipping, shipping_cost_input, ad_rate, ca
         ad_rate_decimal = ad_rate / 100
         target_margin_decimal = target_margin / 100
         
-        sold_price = price + shipping_cost_input
+        # Calculate sold_price based on shipping method
+        if shipping_method == "Buyer Pays Shipping":
+            sold_price = price + shipping_cost_input
+        else:  # Free Shipping
+            sold_price = price
+            
         sold_price_with_shipping_taxes = sold_price * (1 + tax_rate)
         ebay_transaction_fees = (sold_price_with_shipping_taxes * ebay_fee) + final_value_fee
         ad_fees = ad_rate_decimal * sold_price_with_shipping_taxes
@@ -181,10 +186,6 @@ def create_price_analytics(df):
     # Metrics row
     col1, col2, col3, col4 = st.columns(4)
     
-    # with col1:
-    #     avg_price = df_clean['price'].mean()
-    #     st.metric("Average Price", f"${avg_price:.2f}")
-    
     with col1:
         median_price = df_clean['price'].median()
         st.metric("Median Price", f"${median_price:.2f}")
@@ -202,7 +203,7 @@ def create_price_analytics(df):
         st.metric("Median Estimated Profit", f"${median_profit:.2f}")
 
 # Calculate profit metrics
-def calculate_profit_metrics(price, shipping, cogs, shipping_cost_input, ad_rate, category):
+def calculate_profit_metrics(price, shipping, cogs, shipping_cost_input, ad_rate, category, shipping_method):
     """Calculate profit metrics with proper error handling"""
     try:
         price = float(price) if price is not None else 0.0
@@ -221,7 +222,12 @@ def calculate_profit_metrics(price, shipping, cogs, shipping_cost_input, ad_rate
         tax_rate = 0.0825
         ad_rate_decimal = ad_rate / 100
         
-        sold_price = price + shipping_cost_input
+        # Calculate sold_price based on shipping method
+        if shipping_method == "Buyer Pays Shipping":
+            sold_price = price + shipping_cost_input
+        else:  # Free Shipping
+            sold_price = price
+            
         sold_price_with_shipping_taxes = sold_price * (1 + tax_rate)
         ebay_transaction_fees = (sold_price_with_shipping_taxes * ebay_fee) + final_value_fee
         ad_fees = ad_rate_decimal * sold_price_with_shipping_taxes
@@ -324,12 +330,26 @@ else:
     cogs = None
     st.info("💡 Using target profit margin. The app will calculate required COGS (Target Acquisition Cost) for each listing to achieve your target margin.")
 
+# Shipping method selection
+shipping_method = st.radio(
+    "Shipping Method:",
+    ["Buyer Pays Shipping", "Free Shipping"],
+    index=0 if st.session_state.get('loaded_shipping_method', 'Buyer Pays Shipping') == 'Buyer Pays Shipping' else 1
+)
+
 shipping_cost = st.number_input(
     "Shipping Cost ($):",
     min_value=0.0,
     max_value=10000.0,
-    value=float(st.session_state.get('loaded_shipping_cost', 4.47))
+    value=float(st.session_state.get('loaded_shipping_cost', 4.47)),
+    help="Cost you will pay to ship the item to the buyer"
 )
+
+# Add explanation for shipping methods
+if shipping_method == "Buyer Pays Shipping":
+    st.info("🚚 **Buyer Pays Shipping**: Buyer pays item price + your shipping cost. eBay fees calculated on total (item + shipping).")
+else:
+    st.info("🆓 **Free Shipping**: You absorb shipping costs. eBay fees calculated only on item price, but you pay shipping out of pocket.")
 
 ad_rate = st.number_input(
     "Advertising Rate (%):",
@@ -360,6 +380,7 @@ with col2:
             'cogs_method': cogs_method,
             'cogs': cogs if cogs_method == "Manual COGS Entry" else None,
             'target_profit_margin': target_profit_margin if cogs_method == "Target Profit Margin" else None,
+            'shipping_method': shipping_method,
             'shipping_cost': shipping_cost,
             'ad_rate': ad_rate,
             'limit': limit
@@ -507,13 +528,13 @@ if search_clicked:
                         calculated_target_cogs = None
                     else:  # Target Profit Margin
                         calculated_target_cogs = calculate_cogs_from_margin(
-                            price, shipping, shipping_cost, ad_rate, selected_category, target_profit_margin
+                            price, shipping, shipping_cost, ad_rate, selected_category, target_profit_margin, shipping_method
                         )
                         actual_cogs = calculated_target_cogs
 
                     # Calculate profit metrics
                     net_profit, profit_margin, total_expenses, ebay_pay_out = calculate_profit_metrics(
-                        price, shipping, actual_cogs, shipping_cost, ad_rate, selected_category
+                        price, shipping, actual_cogs, shipping_cost, ad_rate, selected_category, shipping_method
                     )
 
                     # Get seller information
@@ -556,10 +577,10 @@ if search_clicked:
                 # Display method info
                 st.header("🎯 Search Configuration")
                 if cogs_method == "Manual COGS Entry":
-                    st.info(f"📊 **Method:** Manual COGS Entry (${cogs:.2f})")
+                    st.info(f"📊 **Method:** Manual COGS Entry (${cogs:.2f}) | **Shipping:** {shipping_method}")
                     st.write("The **Target Acquisition Cost/COGS** column shows your manually entered COGS value.")
                 else:
-                    st.info(f"📊 **Method:** Target Profit Margin ({target_profit_margin:.1f}%)")
+                    st.info(f"📊 **Method:** Target Profit Margin ({target_profit_margin:.1f}%) | **Shipping:** {shipping_method}")
                     st.write("The **Target Acquisition Cost/COGS** column shows the maximum you should pay to achieve your target profit margin.")
 
                 # Price Analytics Dashboard
