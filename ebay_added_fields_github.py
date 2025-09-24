@@ -233,12 +233,24 @@ def calculate_profit_metrics(price, shipping, cogs, shipping_cost_input, ad_rate
             sold_price = price + shipping_cost_input
         else:  # Free Shipping
             sold_price = price
-            
+
+        # Adjust for new Texas rule    
         sold_price_with_shipping_taxes = sold_price * (1 + tax_rate)
         ebay_transaction_fees = (sold_price_with_shipping_taxes * ebay_fee) + final_value_fee
         ad_fees = ad_rate_decimal * sold_price_with_shipping_taxes
-        total_expenses = ebay_transaction_fees + ad_fees + shipping_cost_input
+
+        # Apply Texas sales tax on eBay seller fees only
+        fees_subtotal = ebay_transaction_fees + ad_fees
+        texas_fee_tax = fees_subtotal * 0.0825
+
+        total_expenses = ebay_transaction_fees + ad_fees + texas_fee_tax + shipping_cost_input
         ebay_pay_out = sold_price - total_expenses
+            
+        # sold_price_with_shipping_taxes = sold_price * (1 + tax_rate)
+        # ebay_transaction_fees = (sold_price_with_shipping_taxes * ebay_fee) + final_value_fee
+        # ad_fees = ad_rate_decimal * sold_price_with_shipping_taxes
+        # total_expenses = ebay_transaction_fees + ad_fees + shipping_cost_input
+        # ebay_pay_out = sold_price - total_expenses
         net_profit = ebay_pay_out - cogs
         profit_margin = (net_profit / price * 100) if price > 0 else 0
         
