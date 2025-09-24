@@ -116,10 +116,11 @@ def calculate_cogs_from_margin(price, shipping, shipping_cost_input, ad_rate, ca
             sold_price = price + shipping_cost_input
         else:  # Free Shipping
             sold_price = price
-            
+        
+        # Adjust for new Texas rule    
         sold_price_with_shipping_taxes = sold_price * (1 + tax_rate)
-        ebay_transaction_fees = (sold_price_with_shipping_taxes * ebay_fee) + final_value_fee
-        ad_fees = ad_rate_decimal * sold_price_with_shipping_taxes
+        ebay_transaction_fees = ((sold_price_with_shipping_taxes * ebay_fee) + (final_value_fee))*1.0825 
+        ad_fees = (ad_rate_decimal * sold_price_with_shipping_taxes)*1.0825
         total_expenses = ebay_transaction_fees + ad_fees + shipping_cost_input
         ebay_pay_out = sold_price - total_expenses
         
