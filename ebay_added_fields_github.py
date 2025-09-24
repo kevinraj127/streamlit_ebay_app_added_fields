@@ -119,9 +119,14 @@ def calculate_cogs_from_margin(price, shipping, shipping_cost_input, ad_rate, ca
         
         # Adjust for new Texas rule    
         sold_price_with_shipping_taxes = sold_price * (1 + tax_rate)
-        ebay_transaction_fees = ((sold_price_with_shipping_taxes * ebay_fee) + (final_value_fee))*1.0825 
-        ad_fees = (ad_rate_decimal * sold_price_with_shipping_taxes)*1.0825
-        total_expenses = ebay_transaction_fees + ad_fees + shipping_cost_input
+        ebay_transaction_fees = (sold_price_with_shipping_taxes * ebay_fee) + final_value_fee
+        ad_fees = ad_rate_decimal * sold_price_with_shipping_taxes
+
+        # Apply Texas sales tax on eBay seller fees only
+        fees_subtotal = ebay_transaction_fees + ad_fees
+        texas_fee_tax = fees_subtotal * 0.0825
+
+        total_expenses = ebay_transaction_fees + ad_fees + texas_fee_tax + shipping_cost_input
         ebay_pay_out = sold_price - total_expenses
         
         # Calculate required COGS for target margin
