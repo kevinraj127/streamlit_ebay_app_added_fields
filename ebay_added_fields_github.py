@@ -123,7 +123,7 @@ def calculate_cogs_from_margin(price, shipping, shipping_cost_input, ad_rate, ca
         ad_fees = ad_rate_decimal * sold_price_with_shipping_taxes
 
         # Apply Texas sales tax on eBay seller fees only
-        fees_subtotal = ebay_transaction_fees + ad_fees
+        fees_subtotal = (ebay_transaction_fees + ad_fees) * .8
         texas_fee_tax = fees_subtotal * 0.0825
 
         total_expenses = ebay_transaction_fees + ad_fees + texas_fee_tax + shipping_cost_input
@@ -240,7 +240,7 @@ def calculate_profit_metrics(price, shipping, cogs, shipping_cost_input, ad_rate
         ad_fees = ad_rate_decimal * sold_price_with_shipping_taxes
 
         # Apply Texas sales tax on eBay seller fees only
-        fees_subtotal = ebay_transaction_fees + ad_fees
+        fees_subtotal = (ebay_transaction_fees + ad_fees) * .8
         texas_fee_tax = fees_subtotal * 0.0825
 
         total_expenses = ebay_transaction_fees + ad_fees + texas_fee_tax + shipping_cost_input
