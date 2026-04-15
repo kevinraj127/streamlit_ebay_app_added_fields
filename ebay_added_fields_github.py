@@ -156,10 +156,16 @@ aspect_map = {
 # All categories: +2% promoted listings
 MEDIA_CATEGORIES_153 = {"Books", "DVD & Blu-ray", "Music CDs", "Music Cassettes", "Manga"}
 PROMOTED_LISTINGS_FEE = 0.02
-SHIPPING_BUYER_PAYS = 4.47
 TAX_RATE = 0.0825
 PER_TRANSACTION_FEE = 0.40
 PACKAGING_COST = 0.35
+
+VIDEO_GAME_CATEGORIES = {"Video Games & Consoles"}
+SHIPPING_VIDEO_GAMES = 5.50
+SHIPPING_MEDIA = 4.47
+
+def get_shipping_cost(category):
+    return SHIPPING_VIDEO_GAMES if category in VIDEO_GAME_CATEGORIES else SHIPPING_MEDIA
 
 def get_combined_fee_rate(category):
     fvf = 0.153 if category in MEDIA_CATEGORIES_153 else 0.136
@@ -167,8 +173,9 @@ def get_combined_fee_rate(category):
 
 def calculate_profit(sale_price, acquisition_cost, margin_target, category="All Categories"):
     combined_fee_rate = get_combined_fee_rate(category)
+    shipping = get_shipping_cost(category)
     tax_gross_up = sale_price * TAX_RATE
-    fee_basis = sale_price + SHIPPING_BUYER_PAYS + tax_gross_up
+    fee_basis = sale_price + shipping + tax_gross_up
     total_fees = (fee_basis * combined_fee_rate) + PER_TRANSACTION_FEE + PACKAGING_COST
     net_profit = sale_price - total_fees - acquisition_cost
     margin = (net_profit / sale_price) * 100 if sale_price > 0 else 0
@@ -284,7 +291,7 @@ def display_lot_results(results_df, margin_target, is_lot=True):
         "total_fees": "${:.2f}",
         "net_profit": "${:.2f}",
         "margin_pct": "{:.1f}%"
-    }).map(color_decision, subset=["decision"])
+    }).applymap(color_decision, subset=["decision"])
     st.dataframe(styled, use_container_width=True)
     csv_out = results_df.to_csv(index=False)
     st.download_button(
