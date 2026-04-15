@@ -284,7 +284,7 @@ def display_lot_results(results_df, margin_target, is_lot=True):
         "total_fees": "${:.2f}",
         "net_profit": "${:.2f}",
         "margin_pct": "{:.1f}%"
-    }).applymap(color_decision, subset=["decision"])
+    }).map(color_decision, subset=["decision"])
     st.dataframe(styled, use_container_width=True)
     csv_out = results_df.to_csv(index=False)
     st.download_button(
