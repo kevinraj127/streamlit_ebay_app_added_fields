@@ -267,8 +267,8 @@ def display_lot_results(results_df, margin_target, is_lot=True):
         buys = results_df[results_df["decision"] == "✅ BUY"]
         no_data = results_df[results_df["listing_count"] == 0]
         total_acquisition = results_df["acquisition_cost"].sum()
-        total_revenue = buys["equilibrium_price"].sum()
-        total_profit = buys["net_profit"].sum()
+        total_revenue = results_df["equilibrium_price"].sum()
+        total_profit = results_df["net_profit"].sum()
         lot_margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
         lot_decision = "✅ BUY LOT" if lot_margin >= margin_target else "❌ PASS ON LOT"
         col1, col2, col3, col4, col5 = st.columns(5)
@@ -291,7 +291,7 @@ def display_lot_results(results_df, margin_target, is_lot=True):
         "total_fees": "${:.2f}",
         "net_profit": "${:.2f}",
         "margin_pct": "{:.1f}%"
-    }).map(color_decision, subset=["decision"])
+    }).applymap(color_decision, subset=["decision"])
     st.dataframe(styled, use_container_width=True)
     csv_out = results_df.to_csv(index=False)
     st.download_button(
