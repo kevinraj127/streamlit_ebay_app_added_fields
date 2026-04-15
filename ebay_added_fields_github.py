@@ -208,14 +208,10 @@ def get_equilibrium_price(title, category_id, bulk_max_price, bulk_limit, access
         if not prices:
             return 0.0, 0
         prices_sorted = sorted(prices)
-        n = len(prices_sorted)
-        q1 = prices_sorted[n // 4]
-        q3 = prices_sorted[(3 * n) // 4]
-        iqr = q3 - q1
-        filtered = [p for p in prices_sorted if (q1 - 1.5 * iqr) <= p <= (q3 + 1.5 * iqr)] or prices_sorted
-        trim = max(1, int(len(filtered) * 0.15))
-        trimmed = filtered[trim:-trim] if len(filtered) > 2 * trim else filtered
-        return round(sum(trimmed) / len(trimmed), 2), len(prices)
+        bottom_5 = prices_sorted[:5]
+        mid = len(bottom_5) // 2
+        equilibrium = bottom_5[mid] if len(bottom_5) % 2 != 0 else (bottom_5[mid - 1] + bottom_5[mid]) / 2
+        return round(equilibrium, 2), len(prices)
     except Exception:
         return 0.0, 0
 
@@ -288,7 +284,7 @@ def display_lot_results(results_df, margin_target, is_lot=True):
         "total_fees": "${:.2f}",
         "net_profit": "${:.2f}",
         "margin_pct": "{:.1f}%"
-    }).map(color_decision, subset=["decision"])
+    }).applymap(color_decision, subset=["decision"])
     st.dataframe(styled, use_container_width=True)
     csv_out = results_df.to_csv(index=False)
     st.download_button(
