@@ -272,8 +272,8 @@ def display_lot_results(results_df, margin_target, is_lot=True):
         lot_margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
         lot_decision = "✅ BUY LOT" if lot_margin >= margin_target else "❌ PASS ON LOT"
         col1, col2, col3, col4, col5 = st.columns(5)
-        col1.metric("BUY titles", len(buys))
-        col2.metric("PASS titles", len(results_df) - len(buys))
+        col1.metric("WINNER titles", len(buys))
+        col2.metric("DUD titles", len(results_df) - len(buys))
         col3.metric("Total Acquisition", f"${total_acquisition:.2f}")
         col4.metric("Est. Net Profit", f"${total_profit:.2f}")
         col5.metric("Lot Margin", f"{lot_margin:.1f}%")
