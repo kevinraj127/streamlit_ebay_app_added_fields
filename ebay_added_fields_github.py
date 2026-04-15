@@ -248,7 +248,7 @@ def run_lot_analysis(titles_df, bulk_max_price, bulk_limit, margin_target, acces
             "total_fees": profit_data["total_fees"],
             "net_profit": profit_data["net_profit"],
             "margin_pct": profit_data["margin_pct"],
-            "decision": "✅ BUY" if profit_data["meets_target"] else "❌ PASS"
+            "decision": "✅ WINNER" if profit_data["meets_target"] and profit_data["net_profit"] >= 10 else "❌ DUD"
         })
     progress_bar.empty()
     status_text.empty()
@@ -256,15 +256,15 @@ def run_lot_analysis(titles_df, bulk_max_price, bulk_limit, margin_target, acces
 
 def display_lot_results(results_df, margin_target, is_lot=True):
     def color_decision(val):
-        if "BUY" in str(val):
+        if "WINNER" in str(val):
             return "background-color: #d4edda; color: #155724;"
-        elif "PASS" in str(val):
+        elif "DUD" in str(val):
             return "background-color: #f8d7da; color: #721c24;"
         return ""
 
     if is_lot:
         st.subheader("🎯 Lot Decision")
-        buys = results_df[results_df["decision"] == "✅ BUY"]
+        buys = results_df[results_df["decision"] == "✅ WINNER"]
         no_data = results_df[results_df["listing_count"] == 0]
         total_acquisition = results_df["acquisition_cost"].sum()
         total_revenue = results_df["equilibrium_price"].sum()
