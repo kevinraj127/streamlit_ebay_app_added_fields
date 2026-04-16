@@ -217,7 +217,7 @@ def get_equilibrium_price(title, category_id, bulk_max_price, bulk_limit, access
         items_with_prices = []
         if resp.status_code == 200:
             for item in resp.json().get("itemSummaries", []):
-                if item.get("conditionId") == "7000":
+                if item.get("conditionId") in ("7000", "1000"):
                     continue
                 price = float(item.get("price", {}).get("value", 0.0))
                 if 1 <= price <= bulk_max_price:
