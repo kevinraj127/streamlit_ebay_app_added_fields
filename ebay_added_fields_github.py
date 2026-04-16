@@ -186,6 +186,15 @@ def calculate_profit(sale_price, acquisition_cost, margin_target, category="All 
         "meets_target": margin >= margin_target
     }
 
+def calculate_max_acquisition(sale_price, margin_target, category="All Categories"):
+    combined_fee_rate = get_combined_fee_rate(category)
+    shipping = get_shipping_cost(category)
+    tax_gross_up = sale_price * TAX_RATE
+    fee_basis = sale_price + shipping + tax_gross_up
+    total_fees = (fee_basis * combined_fee_rate) + PER_TRANSACTION_FEE + PACKAGING_COST
+    max_acq = sale_price * (1 - margin_target / 100) - total_fees
+    return round(max_acq, 2)
+
 def get_equilibrium_price(title, category_id, bulk_max_price, bulk_limit, access_token, condition_ids="1000|1500|2000|2500|3000"):
     params = {
         "q": title,
@@ -205,6 +214,7 @@ def get_equilibrium_price(title, category_id, bulk_max_price, bulk_limit, access
             params=params, headers=headers_api
         )
         prices = []
+        items_with_prices = []
         if resp.status_code == 200:
             for item in resp.json().get("itemSummaries", []):
                 if item.get("conditionId") == "7000":
@@ -212,15 +222,18 @@ def get_equilibrium_price(title, category_id, bulk_max_price, bulk_limit, access
                 price = float(item.get("price", {}).get("value", 0.0))
                 if 1 <= price <= bulk_max_price:
                     prices.append(price)
+                    items_with_prices.append((price, item.get("itemWebUrl", "")))
         if not prices:
-            return 0.0, 0
+            return 0.0, 0, []
         prices_sorted = sorted(prices)
+        items_sorted = sorted(items_with_prices, key=lambda x: x[0])
+        top_5_urls = [url for _, url in items_sorted[:5]]
         bottom_5 = prices_sorted[:5]
         mid = len(bottom_5) // 2
         equilibrium = bottom_5[mid] if len(bottom_5) % 2 != 0 else (bottom_5[mid - 1] + bottom_5[mid]) / 2
-        return round(equilibrium, 2), len(prices)
+        return round(equilibrium, 2), len(prices), top_5_urls
     except Exception:
-        return 0.0, 0
+        return 0.0, 0, []
 
 def run_lot_analysis(titles_df, bulk_max_price, bulk_limit, margin_target, access_token, category_options, condition_ids="3000"):
     bulk_results = []
@@ -233,22 +246,29 @@ def run_lot_analysis(titles_df, bulk_max_price, bulk_limit, margin_target, acces
         category_id = category_options.get(row_category, None)
         status_text.text(f"Searching {i+1}/{len(titles_df)}: {title}")
         progress_bar.progress((i + 1) / len(titles_df))
-        equilibrium_price, listing_count = get_equilibrium_price(
+        equilibrium_price, listing_count, top_5_urls = get_equilibrium_price(
             title, category_id, bulk_max_price, bulk_limit, access_token, condition_ids
         )
         profit_data = calculate_profit(equilibrium_price, acquisition_cost, margin_target, row_category) if equilibrium_price > 0 else {
             "net_profit": 0.0, "margin_pct": 0.0, "total_fees": 0.0, "meets_target": False
         }
+        max_acq = calculate_max_acquisition(equilibrium_price, margin_target, row_category) if equilibrium_price > 0 else 0.0
         bulk_results.append({
             "title": title,
             "category": row_category,
             "acquisition_cost": acquisition_cost,
+            "max_acquisition": max_acq,
             "equilibrium_price": equilibrium_price,
             "listing_count": listing_count,
             "total_fees": profit_data["total_fees"],
             "net_profit": profit_data["net_profit"],
             "margin_pct": profit_data["margin_pct"],
-            "decision": "✅ WINNER" if profit_data["meets_target"] and profit_data["net_profit"] >= 10 else "❌ DUD"
+            "decision": "✅ WINNER" if profit_data["meets_target"] and profit_data["net_profit"] >= 10 else "❌ DUD",
+            "ebay_link_1": top_5_urls[0] if len(top_5_urls) > 0 else "",
+            "ebay_link_2": top_5_urls[1] if len(top_5_urls) > 1 else "",
+            "ebay_link_3": top_5_urls[2] if len(top_5_urls) > 2 else "",
+            "ebay_link_4": top_5_urls[3] if len(top_5_urls) > 3 else "",
+            "ebay_link_5": top_5_urls[4] if len(top_5_urls) > 4 else ""
         })
     progress_bar.empty()
     status_text.empty()
@@ -270,7 +290,7 @@ def display_lot_results(results_df, margin_target, is_lot=True):
         total_revenue = results_df["equilibrium_price"].sum()
         total_profit = results_df["net_profit"].sum()
         lot_margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
-        lot_decision = "✅ BUY LOT" if lot_margin >= margin_target else "❌ PASS ON LOT"
+        lot_decision = "✅ BUY LOT" if lot_margin >= margin_target and total_profit >= 10 else "❌ PASS ON LOT"
         col1, col2, col3, col4, col5 = st.columns(5)
         col1.metric("WINNER titles", len(buys))
         col2.metric("DUD titles", len(results_df) - len(buys))
@@ -287,12 +307,19 @@ def display_lot_results(results_df, margin_target, is_lot=True):
     st.subheader("📋 Per-Title Breakdown")
     styled = results_df.style.format({
         "acquisition_cost": "${:.2f}",
+        "max_acquisition": "${:.2f}",
         "equilibrium_price": "${:.2f}",
         "total_fees": "${:.2f}",
         "net_profit": "${:.2f}",
         "margin_pct": "{:.1f}%"
     }).map(color_decision, subset=["decision"])
-    st.dataframe(styled, use_container_width=True)
+    st.dataframe(styled, use_container_width=True, column_config={
+        "ebay_link_1": st.column_config.LinkColumn("eBay #1", display_text="Link 1"),
+        "ebay_link_2": st.column_config.LinkColumn("eBay #2", display_text="Link 2"),
+        "ebay_link_3": st.column_config.LinkColumn("eBay #3", display_text="Link 3"),
+        "ebay_link_4": st.column_config.LinkColumn("eBay #4", display_text="Link 4"),
+        "ebay_link_5": st.column_config.LinkColumn("eBay #5", display_text="Link 5"),
+    })
     csv_out = results_df.to_csv(index=False)
     st.download_button(
         "📥 Download Analysis CSV",
@@ -606,18 +633,28 @@ with tab2:
                     st.write(f"Found **{len(titles_df)} titles** ready to analyze.")
                     st.dataframe(titles_df, use_container_width=True)
 
-                    lot_cost = st.number_input(
-                        "Total lot acquisition cost ($)",
-                        min_value=0.0,
-                        value=10.00,
-                        step=0.50,
-                        key="lot_total_cost",
-                        help=f"Will be split evenly across all {len(titles_df)} titles (${10.00/len(titles_df):.2f} each at $10.00)"
+                    acquisition_mode = st.radio(
+                        "Acquisition cost mode",
+                        ["Fixed price (I know what they're asking)", "Derived (calculate max I should pay)"],
+                        horizontal=True,
+                        key="acquisition_mode"
                     )
-                    per_title_cost = lot_cost / len(titles_df)
-                    st.caption(f"📌 Per-title cost: **${per_title_cost:.2f}** ({len(titles_df)} titles)")
 
-                    titles_df["acquisition_cost"] = per_title_cost
+                    if acquisition_mode == "Fixed price (I know what they're asking)":
+                        lot_cost = st.number_input(
+                            "Total lot acquisition cost ($)",
+                            min_value=0.0,
+                            value=10.00,
+                            step=0.50,
+                            key="lot_total_cost",
+                            help=f"Will be split evenly across all {len(titles_df)} titles"
+                        )
+                        per_title_cost = lot_cost / len(titles_df)
+                        st.caption(f"📌 Per-title cost: **${per_title_cost:.2f}** ({len(titles_df)} titles)")
+                        titles_df["acquisition_cost"] = per_title_cost
+                    else:
+                        st.info(f"💡 Max acquisition cost will be derived per title based on your {margin_target}% margin target after eBay fees.")
+                        titles_df["acquisition_cost"] = 0.0
 
                     if st.button("🚀 Analyze Lot", type="primary", key="lot_analyze_btn"):
                         if not access_token:
