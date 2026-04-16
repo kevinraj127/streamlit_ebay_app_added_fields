@@ -249,14 +249,17 @@ def run_lot_analysis(titles_df, bulk_max_price, bulk_limit, margin_target, acces
         equilibrium_price, listing_count, top_5_urls = get_equilibrium_price(
             title, category_id, bulk_max_price, bulk_limit, access_token, condition_ids
         )
-        profit_data = calculate_profit(equilibrium_price, acquisition_cost, margin_target, row_category) if equilibrium_price > 0 else {
-            "net_profit": 0.0, "margin_pct": 0.0, "total_fees": 0.0, "meets_target": False
-        }
         max_acq = calculate_max_acquisition(equilibrium_price, margin_target, row_category) if equilibrium_price > 0 else 0.0
+        # If derived mode (acquisition_cost passed in as 0), use max_acq as the cost
+        effective_cost = max_acq if acquisition_cost == 0.0 else acquisition_cost
+
+        profit_data = calculate_profit(equilibrium_price, effective_cost, margin_target, row_category) if equilibrium_price > 0 else {
+        "net_profit": 0.0, "margin_pct": 0.0, "total_fees": 0.0, "meets_target": False
+        }
         bulk_results.append({
             "title": title,
             "category": row_category,
-            "acquisition_cost": acquisition_cost,
+            "acquisition_cost": effective_cost,
             "max_acquisition": max_acq,
             "equilibrium_price": equilibrium_price,
             "listing_count": listing_count,
