@@ -177,14 +177,12 @@ def calculate_profit(sale_price, acquisition_cost, margin_target, category="All 
     tax_gross_up = sale_price * TAX_RATE
     fee_basis = sale_price + shipping + tax_gross_up
     total_fees = (fee_basis * combined_fee_rate) + PER_TRANSACTION_FEE + PACKAGING_COST
-    net_proceeds = sale_price - total_fees
     net_profit = sale_price - total_fees - acquisition_cost
     margin = (net_profit / sale_price) * 100 if sale_price > 0 else 0
     return {
         "net_profit": round(net_profit, 2),
         "margin_pct": round(margin, 1),
         "total_fees": round(total_fees, 2),
-        "net_proceeds": round(net_proceeds, 2),
         "meets_target": margin >= margin_target
     }
 
@@ -252,23 +250,19 @@ def run_lot_analysis(titles_df, bulk_max_price, bulk_limit, margin_target, acces
             title, category_id, bulk_max_price, bulk_limit, access_token, condition_ids
         )
         max_acq = calculate_max_acquisition(equilibrium_price, margin_target, row_category) if equilibrium_price > 0 else 0.0
-        # If derived mode (acquisition_cost passed in as 0), use max_acq as the cost
-        effective_cost = max_acq if acquisition_cost == 0.0 else acquisition_cost
-
-        profit_data = calculate_profit(equilibrium_price, effective_cost, margin_target, row_category) if equilibrium_price > 0 else {
-        "net_profit": 0.0, "margin_pct": 0.0, "total_fees": 0.0, "meets_target": False
+        profit_data = calculate_profit(equilibrium_price, acquisition_cost, margin_target, row_category) if equilibrium_price > 0 else {
+            "net_profit": 0.0, "margin_pct": 0.0, "total_fees": 0.0, "meets_target": False
         }
         bulk_results.append({
             "title": title,
             "category": row_category,
-            "acquisition_cost": effective_cost,
+            "acquisition_cost": acquisition_cost,
             "max_acquisition": max_acq,
             "equilibrium_price": equilibrium_price,
             "listing_count": listing_count,
             "total_fees": profit_data["total_fees"],
             "net_profit": profit_data["net_profit"],
             "margin_pct": profit_data["margin_pct"],
-            "net_proceeds": profit_data["net_proceeds"],
             "decision": "✅ WINNER" if profit_data["meets_target"] and profit_data["net_profit"] >= 10 else "❌ DUD",
             "ebay_link_1": top_5_urls[0] if len(top_5_urls) > 0 else "",
             "ebay_link_2": top_5_urls[1] if len(top_5_urls) > 1 else "",
@@ -316,7 +310,6 @@ def display_lot_results(results_df, margin_target, is_lot=True):
         "max_acquisition": "${:.2f}",
         "equilibrium_price": "${:.2f}",
         "total_fees": "${:.2f}",
-        "net_proceeds": "${:.2f}",
         "net_profit": "${:.2f}",
         "margin_pct": "{:.1f}%"
     }).map(color_decision, subset=["decision"])
@@ -660,7 +653,7 @@ with tab2:
                         st.caption(f"📌 Per-title cost: **${per_title_cost:.2f}** ({len(titles_df)} titles)")
                         titles_df["acquisition_cost"] = per_title_cost
                     else:
-                        st.info(f"💡 Max acquisition cost will be derived per title based on your {margin_target}% margin target after eBay fees.")
+                        st.info(f"💡 Max acquisition cost will be derived from total lot value split evenly across all {len(titles_df)} titles.")
                         titles_df["acquisition_cost"] = 0.0
 
                     if st.button("🚀 Analyze Lot", type="primary", key="lot_analyze_btn"):
@@ -668,6 +661,21 @@ with tab2:
                             st.error("Missing eBay access token.")
                         else:
                             results = run_lot_analysis(titles_df, bulk_max_price, bulk_limit, margin_target, access_token, category_options, condition_ids)
+
+                            if acquisition_mode == "Derived (calculate max I should pay)":
+                                total_max_bid = results["max_acquisition"].sum()
+                                per_title_cogs = total_max_bid / len(results)
+                                results["acquisition_cost"] = per_title_cogs
+                                results[["net_profit", "margin_pct", "total_fees", "meets_target"]] = results.apply(
+                                    lambda r: pd.Series(calculate_profit(r["equilibrium_price"], per_title_cogs, margin_target, r["category"])),
+                                    axis=1
+                                )
+                                results["decision"] = results.apply(
+                                    lambda r: "✅ WINNER" if r["meets_target"] and r["net_profit"] >= 10 else "❌ DUD", axis=1
+                                )
+                                st.caption(f"📌 Derived max bid: **${total_max_bid:.2f}** — per-title COGS: **${per_title_cogs:.2f}** ({len(results)} titles)")
+
                             display_lot_results(results, margin_target, is_lot=True)
+
             except Exception as e:
                 st.error(f"Error reading CSV: {e}")
