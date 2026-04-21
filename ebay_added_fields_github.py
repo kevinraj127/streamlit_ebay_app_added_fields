@@ -309,11 +309,11 @@ def display_lot_results(results_df, margin_target, is_lot=True):
 
     st.subheader("📋 Per-Title Breakdown")
     styled = results_df.style.format({
-        "acquisition_cost": "${:.2f}",
         "max_acquisition": "${:.2f}",
         "equilibrium_price": "${:.2f}",
         "total_fees": "${:.2f}",
         "total_payout": "${:.2f}",
+        "acquisition_cost": "${:.2f}",        
         "net_profit": "${:.2f}",
         "margin_pct": "{:.1f}%"
     }).map(color_decision, subset=["decision"])
