@@ -670,7 +670,7 @@ with tab2:
                                 total_max_bid = results["max_acquisition"].sum()
                                 per_title_cogs = total_max_bid / len(results)
                                 results["acquisition_cost"] = per_title_cogs
-                                results[["net_profit", "margin_pct", "total_fees", "meets_target"]] = results.apply(
+                                results[["net_profit", "margin_pct", "total_fees", "total_payout", "meets_target"]] = results.apply(
                                     lambda r: pd.Series(calculate_profit(r["equilibrium_price"], per_title_cogs, margin_target, r["category"])),
                                     axis=1
                                 )
