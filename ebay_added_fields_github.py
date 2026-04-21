@@ -177,12 +177,14 @@ def calculate_profit(sale_price, acquisition_cost, margin_target, category="All 
     tax_gross_up = sale_price * TAX_RATE
     fee_basis = sale_price + shipping + tax_gross_up
     total_fees = (fee_basis * combined_fee_rate) + PER_TRANSACTION_FEE + PACKAGING_COST
+    total_payout = sale_price - total_fees
     net_profit = sale_price - total_fees - acquisition_cost
     margin = (net_profit / sale_price) * 100 if sale_price > 0 else 0
     return {
         "net_profit": round(net_profit, 2),
         "margin_pct": round(margin, 1),
         "total_fees": round(total_fees, 2),
+        "total_payout": round(total_payout, 2),
         "meets_target": margin >= margin_target
     }
 
@@ -251,7 +253,7 @@ def run_lot_analysis(titles_df, bulk_max_price, bulk_limit, margin_target, acces
         )
         max_acq = calculate_max_acquisition(equilibrium_price, margin_target, row_category) if equilibrium_price > 0 else 0.0
         profit_data = calculate_profit(equilibrium_price, acquisition_cost, margin_target, row_category) if equilibrium_price > 0 else {
-            "net_profit": 0.0, "margin_pct": 0.0, "total_fees": 0.0, "meets_target": False
+            "net_profit": 0.0, "margin_pct": 0.0, "total_fees": 0.0, "meets_target": False, "total_payout": 0.0
         }
         bulk_results.append({
             "title": title,
@@ -261,6 +263,7 @@ def run_lot_analysis(titles_df, bulk_max_price, bulk_limit, margin_target, acces
             "equilibrium_price": equilibrium_price,
             "listing_count": listing_count,
             "total_fees": profit_data["total_fees"],
+            "total_payout": profit_data["total_payout"],
             "net_profit": profit_data["net_profit"],
             "margin_pct": profit_data["margin_pct"],
             "decision": "✅ WINNER" if profit_data["meets_target"] and profit_data["net_profit"] >= 10 else "❌ DUD",
@@ -310,6 +313,7 @@ def display_lot_results(results_df, margin_target, is_lot=True):
         "max_acquisition": "${:.2f}",
         "equilibrium_price": "${:.2f}",
         "total_fees": "${:.2f}",
+        "total_payout": "${:.2f}",
         "net_profit": "${:.2f}",
         "margin_pct": "{:.1f}%"
     }).map(color_decision, subset=["decision"])
