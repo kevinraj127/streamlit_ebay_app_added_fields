@@ -570,7 +570,7 @@ with tab2:
     with col_a:
         bulk_max_price = st.number_input("Max eBay price ($)", min_value=1, max_value=500, value=50, key="bulk_max_price")
     with col_b:
-        bulk_limit = st.slider("Listings to sample per title", min_value=5, max_value=50, value=25, key="bulk_limit")
+        bulk_limit = st.slider("Listings to sample per title", min_value=5, max_value=100, value=100, key="bulk_limit")
     with col_c:
         margin_target = st.number_input(
             "Target margin (%)", min_value=1, max_value=100, value=30, key="margin_target",
