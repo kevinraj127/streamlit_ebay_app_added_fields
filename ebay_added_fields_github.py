@@ -400,7 +400,7 @@ with tab1:
     )
     search_term = st.text_input("Search for:", value=st.session_state.get('loaded_search_term', ''))
     max_price = st.number_input("Maximum total price ($):", min_value=1, max_value=10000, value=st.session_state.get('loaded_max_price', 150))
-    limit = st.slider("Number of listings to fetch:", min_value=1, max_value=100, value=st.session_state.get('loaded_limit', 25))
+    limit = st.slider("Number of listings to fetch:", min_value=1, max_value=100, value=st.session_state.get('loaded_limit', 100))
 
     col1, col2 = st.columns([3, 1])
     with col1:
