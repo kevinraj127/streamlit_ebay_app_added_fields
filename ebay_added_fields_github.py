@@ -139,6 +139,7 @@ category_options = {
     "Music CDs": "176984",
     "Music Cassettes": "176983",
     "Sporting Goods": "888",
+    "VHS Tapes": "309",
     "Video Games & Consoles": "1249",
     "Vinyl Records": "176985"
 }
