@@ -96,7 +96,7 @@ item will realistically sell for if you're pricing competitively.
 | Packaging cost | $0.35 |
 | Shipping — Video Games & Consoles | $5.97 |
 | Shipping — Media Mail eligible† | $4.39 |
-| Shipping — everything else | $6.00 flat |
+| Shipping — everything else | $6.50 flat |
 
 \* *Media FVF categories: Books, DVD & Blu-ray, Music CDs, Music Cassettes, Manga*
 
