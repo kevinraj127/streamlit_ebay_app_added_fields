@@ -164,10 +164,19 @@ PACKAGING_COST = 0.35
 
 VIDEO_GAME_CATEGORIES = {"Video Games & Consoles"}
 SHIPPING_VIDEO_GAMES = 5.97
-SHIPPING_MEDIA = 4.39
+
+MEDIA_MAIL_CATEGORIES = {"Books", "DVD & Blu-ray", "Music CDs", "Music Cassettes", "Manga", "VHS Tapes", "Vinyl Records"}
+SHIPPING_MEDIA_MAIL = 4.39
+
+SHIPPING_STANDARD = 6.50
 
 def get_shipping_cost(category):
-    return SHIPPING_VIDEO_GAMES if category in VIDEO_GAME_CATEGORIES else SHIPPING_MEDIA
+    if category in VIDEO_GAME_CATEGORIES:
+        return SHIPPING_VIDEO_GAMES
+    elif category in MEDIA_MAIL_CATEGORIES:
+        return SHIPPING_MEDIA_MAIL
+    else:
+        return SHIPPING_STANDARD
 
 def get_combined_fee_rate(category):
     fvf = 0.153 if category in MEDIA_CATEGORIES_153 else 0.136
