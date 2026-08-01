@@ -1,10 +1,16 @@
-# eBay Lot Pricing Tool
+# eBay Deal Check
 
-A Streamlit app for eBay resellers that answers one question before you buy anything:
+**Price intel for eBay resellers and power buyers.**
+
+A Streamlit app that answers one question before you buy anything on eBay:
 **"What's the most I should pay for this?"**
 
-Search live eBay listings, analyze single items or entire lots, and get a data-driven
-BUY/PASS decision based on real active listings — not gut feel.
+Search live listings, analyze a single item or an entire lot, and get a data-driven
+read on whether it's a good deal — backed by real active listings, not gut feel.
+
+**Who this is for:**
+- **Resellers** sourcing lots — get a fee-aware BUY/PASS call before you commit
+- **Power buyers & lot buyers** — price-check a listing or lot before you bid, even if you're not reselling anything
 
 > Uses the eBay Browse API. Not affiliated with or endorsed by eBay Inc.
 
@@ -12,7 +18,13 @@ BUY/PASS decision based on real active listings — not gut feel.
 
 ## Features
 
-### 🔍 Search Listings
+### 🔍 Search Listings — item lookup & market browsing
+This is the tab to reach for when you just want to see what's out there for a specific
+title, or browse a whole category — no profit math attached.
+
+- **Item lookup** — type a specific title into the search box to pull retrieve current
+  active listings for that exact item: prices, condition, listing type, and seller info, so you
+  can eyeball the market before deciding whether it's even worth running the numbers
 - Live eBay search by category, listing type (Auction / Fixed Price / Best Offer), and max price
 - Seller filtering by feedback rating (Elite, Excellent, Very Good, Good, Inexperienced) and
   optional charity/thrift-store seller detection (Goodwill, Salvation Army, Habitat for
@@ -24,6 +36,9 @@ BUY/PASS decision based on real active listings — not gut feel.
 
 ### 📦 Lot Analysis
 Answers the sourcing question directly — for a single title or a whole lot at once.
+Unlike Search Listings, this tab takes your acquisition cost as an input and runs the
+full fee-and-margin math to give you a BUY/PASS call, rather than just showing you raw
+market listings.
 
 - **Single Title** — enter a title and your acquisition cost, get an instant profit/margin
   breakdown against real market comps
