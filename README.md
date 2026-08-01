@@ -39,6 +39,30 @@ Answers the sourcing question directly — for a single title or a whole lot at 
 
 ---
 
+## ⚠️ Important: this prices off active listings, not sold comps
+
+**eBay's Browse API only returns active (currently listed) items — there is no public
+API for sold/completed listings.** The "equilibrium price" this app calculates is the
+median of the 5 lowest *current asking prices* for comparable items, not what those
+items actually sold for.
+
+What this means in practice:
+- It tells you what you're **competing against** in the market right now, not a
+  guaranteed sale price
+- Asking prices run higher than sold prices on average (sellers list optimistically;
+  many items sell below list or via offers)
+- Use the equilibrium price as a **conservative ceiling for your BUY/PASS decision**,
+  not as a promise of what you'll actually collect — build in your own margin buffer
+  beyond the app's target margin if you want additional safety
+- Periodically spot-check equilibrium prices against eBay's own "sold listings" filter
+  (visible when browsing eBay.com directly, though not available via this API) to
+  calibrate how far off active-vs-sold tends to run in your categories
+
+This is a fundamental limitation of eBay's public API, not something this app can work
+around — no third-party tool has legitimate access to eBay's sold-comp data at scale.
+
+---
+
 ## How the pricing logic works
 
 **Equilibrium price** — for each title, the app pulls used/pre-owned listings from eBay's
@@ -50,15 +74,25 @@ item will realistically sell for if you're pricing competitively.
 | Cost | Rate |
 |---|---|
 | Final Value Fee (media categories*) | 15.3% |
-| Final Value Fee (all other categories) | 13.6% |
+| Final Value Fee (all other categories, incl. Video Games & Vinyl Records) | 13.6% |
 | Promoted Listings | +2.0% |
 | Sales tax gross-up | 8.25% (added to fee basis) |
 | Per-transaction fee | $0.40 |
 | Packaging cost | $0.35 |
-| Shipping (video games) | $5.97 |
-| Shipping (other media) | $4.39 |
+| Shipping — Video Games & Consoles | $5.97 |
+| Shipping — Media Mail eligible† | $4.39 |
+| Shipping — everything else | $6.00 flat |
 
-\* *Media categories: Books, DVD & Blu-ray, Music CDs, Music Cassettes, Manga*
+\* *Media FVF categories: Books, DVD & Blu-ray, Music CDs, Music Cassettes, Manga*
+
+† *Media Mail eligible categories: Books, DVD & Blu-ray, Music CDs, Music Cassettes,
+Manga, VHS Tapes, Vinyl Records*
+
+Note: Vinyl Records uses the 13.6% (non-media) FVF rate but the $4.39 Media Mail
+shipping cost, since vinyl is Media Mail eligible despite not falling under eBay's
+discounted media FVF category. All non-media, non-video-game categories (Action
+Figures, Collectible Figures & Bobbleheads, Fragrances, Furniture, Hats, Headphones,
+Men's Clothing, Men's Shoes, Sporting Goods) use a flat $6.00 shipping estimate.
 
 **Max acquisition price** — for "derived" mode, the app works backward from the
 equilibrium price and your target margin to tell you the most you can pay and still hit
@@ -144,8 +178,9 @@ A sample CSV is also downloadable directly from within the app.
 
 ## Notes
 
-- This tool uses the eBay Browse API (read-only, public listing data) — it does not
-  place bids, create listings, or take any action on your behalf.
+- This tool uses the eBay Browse API (read-only, public **active** listing data) — it
+  does not place bids, create listings, or take any action on your behalf. See the
+  callout above regarding active listings vs. sold comps.
 - Pricing/margin figures assume US eBay fee rates and are provided for decision support,
   not guaranteed accuracy — always sanity-check against current eBay fee schedules.
 - Each user runs the app with their own eBay API credentials; no data is shared between
