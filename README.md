@@ -4,7 +4,7 @@ A Streamlit app for eBay resellers that answers one question before you buy anyt
 **"What's the most I should pay for this?"**
 
 Search live eBay listings, analyze single items or entire lots, and get a data-driven
-BUY/PASS decision based on real comparable sales — not gut feel.
+BUY/PASS decision based on real active listings — not gut feel.
 
 > Uses the eBay Browse API. Not affiliated with or endorsed by eBay Inc.
 
